@@ -235,3 +235,50 @@ export async function refreshToken(req, res) {
       .json({ success: false, message: "Internal server error" });
   }
 }
+
+export async function updateName(req, res) {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.userName = name;
+    await user.save();
+    res.status(200).json({ message: "Name updated successfully" });
+  } catch (error) {
+    console.error("Update Name Error:", error);
+    res.status(500).json({ success: false, message: "erroe updating name" });
+  }
+}
+
+export async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body;
+  const { id } = req.params;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const valid = await comparePassword(currentPassword, user.password);
+    if (!valid) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    await user.save();
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "error updating password" });
+  }
+}
