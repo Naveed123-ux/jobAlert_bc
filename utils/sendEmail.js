@@ -43,3 +43,37 @@ export async function sendMail(reciever, subject, body) {
     };
   }
 }
+
+export async function sendNotification(reciever, subject, body) {
+  console.log(process.env.EMAIL_SENDER_PASSWORD, process.env.EMAIL_SENDER_MAIL);
+  try {
+    transpoter.verify((error, success) => {
+      if (error) {
+        console.log(error);
+        return {
+          success: false,
+          message: "Error in sending email",
+        };
+      } else {
+        console.log("Ready for sending");
+      }
+    });
+    const mailOptions = {
+      from: `JobPortal ${process.env.EMAIL_SENDER_MAIL}`,
+      to: reciever,
+      subject,
+      html: body,
+    };
+    await transpoter.sendMail(mailOptions);
+    return {
+      success: true,
+      message: "Email sent successfully",
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      success: false,
+      message: "Internal server error",
+    };
+  }
+}

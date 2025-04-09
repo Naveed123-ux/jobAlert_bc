@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import { jobCategoryEnum } from "../constants/enum.js";
 
 const filterSchema = new Schema(
   {
@@ -12,6 +13,7 @@ const filterSchema = new Schema(
     },
     categories: {
       type: [String],
+      enum: jobCategoryEnum,
       required: true,
     },
     searchTerms: {
@@ -25,6 +27,27 @@ const filterSchema = new Schema(
     },
     skills: {
       type: [String],
+      required: true,
+    },
+    minHourlyRate: {
+      type: Number,
+      required: true,
+    },
+    maxHourlyRate: {
+      type: Number,
+      required: true,
+    },
+    minFixedPrice: {
+      type: Number,
+      required: true,
+    },
+    maxFixedPrice: {
+      type: Number,
+      required: true,
+    },
+    experienceLevel: {
+      type: [String],
+      enum: ["1", "2", "3"],
       required: true,
     },
     isActive: {

@@ -13,6 +13,7 @@ const notficationSchema = new Schema(
     },
     emailNotifications: {
       type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

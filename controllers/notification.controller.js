@@ -1,10 +1,10 @@
 import User from "../models/user.model.js";
-import Notification from "../models/notification.model.js";
+import Notification from "../models/notifcation.model.js";
 
 export async function setNotifcationRecieverEmail(req, res) {
   const { id } = req.params;
-  const { email, receive } = req.body;
-  if (!id || !email || receive === undefined) {
+  const { email } = req.body;
+  if (!id || !email) {
     return res.status(400).json({
       success: false,
       message: "id and email are required",
@@ -18,12 +18,12 @@ export async function setNotifcationRecieverEmail(req, res) {
         message: "User not found",
       });
     }
-    const notificationReciever = Notification.findOne({
+    const notificationReciever = await Notification.findOne({
       userId: id,
     });
     if (notificationReciever) {
       notificationReciever.recievingEmail = email;
-      notificationReciever.emailNotifications = receive;
+
       await notificationReciever.save();
       return res.status(200).json({
         success: true,
@@ -33,7 +33,6 @@ export async function setNotifcationRecieverEmail(req, res) {
     const newNotificationReciever = new Notification({
       userId: id,
       recievingEmail: email,
-      emailNotifications: receive,
     });
     await newNotificationReciever.save();
     return res.status(200).json({
@@ -50,8 +49,8 @@ export async function setNotifcationRecieverEmail(req, res) {
 }
 export async function toggleEmailNotifications(req, res) {
   const { id } = req.params;
-  const { receive } = req.body;
-  if (!id || receive === undefined) {
+
+  if (!id) {
     return res.status(400).json({
       success: false,
       message: "id and receive are required",
@@ -65,7 +64,7 @@ export async function toggleEmailNotifications(req, res) {
         message: "Notification not found",
       });
     }
-    Notification.emailNotifications = receive;
+    Notification.emailNotifications = !Notification.emailNotifications;
     await Notification.save();
     return res
       .status(200)

@@ -1,24 +1,77 @@
 import Filter from "../models/filter.model.js";
 import User from "../models/user.model.js";
-
 export async function addFilter(req, res) {
-  const { name, userId, categories, searchTerms, projectType, skills } =
-    req.body;
-  if (
-    !name ||
-    !userId ||
-    categories.length === 0 ||
-    searchTerms.length === 0 ||
-    !projectType ||
-    !skills.length === 0
-  ) {
-    return res.status(400).json({ message: "All fields are required" });
+  const {
+    name,
+    userId,
+    categories,
+    searchTerms,
+    projectType,
+    skills,
+    minHourlyRate,
+    maxHourlyRate,
+    minFixedPrice,
+    maxFixedPrice,
+    experienceLevel,
+  } = req.body;
+  for (const [index, no] of experienceLevel.entries()) {
+    if (no === "Expert") {
+      experienceLevel[index] = "3";
+    } else if (no === "Intermediate") {
+      experienceLevel[index] = "2";
+    } else if (no === "EntryLevel" || no === "Entry Level") {
+      experienceLevel[index] = "1";
+    } else {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Experience level must be one of the following: Beginner, Intermediate, Expert",
+        });
+    }
+    if (
+      !name ||
+      !userId ||
+      !categories?.length ||
+      !searchTerms?.length ||
+      !projectType ||
+      !skills?.length
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
   }
+  if (
+    (minHourlyRate && isNaN(minHourlyRate)) ||
+    (maxHourlyRate && isNaN(maxHourlyRate)) ||
+    (minFixedPrice && isNaN(minFixedPrice)) ||
+    (maxFixedPrice && isNaN(maxFixedPrice))
+  ) {
+    return res.status(400).json({ message: "Price fields must be numbers" });
+  }
+  if (minHourlyRate && maxHourlyRate && minHourlyRate > maxHourlyRate) {
+    return res
+      .status(400)
+      .json({ message: "minHourlyRate cannot be greater than maxHourlyRate" });
+  }
+
+  if (minFixedPrice && maxFixedPrice && minFixedPrice > maxFixedPrice) {
+    return res
+      .status(400)
+      .json({ message: "minFixedPrice cannot be greater than maxFixedPrice" });
+  }
+
+  if (experienceLevel && !Array.isArray(experienceLevel)) {
+    return res
+      .status(400)
+      .json({ message: "experienceLevel must be an array" });
+  }
+
   try {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     const filter = await Filter.create({
       name,
       userId,
@@ -26,7 +79,13 @@ export async function addFilter(req, res) {
       searchTerms,
       projectType,
       skills,
+      minHourlyRate,
+      maxHourlyRate,
+      minFixedPrice,
+      maxFixedPrice,
+      experienceLevel,
     });
+
     return res.status(201).json({
       success: true,
       data: filter,
@@ -64,16 +123,54 @@ export async function getFilters(req, res) {
 }
 export async function updateFilter(req, res) {
   const { id } = req.params;
-  const { name, categories, searchTerms, projectType, skills } = req.body;
+  const {
+    name,
+    categories,
+    searchTerms,
+    projectType,
+    skills,
+    minHourlyRate,
+    maxHourlyRate,
+    minFixedPrice,
+    maxFixedPrice,
+    experienceLevel,
+  } = req.body;
+
   if (
     !name ||
-    categories.length === 0 ||
-    searchTerms.length === 0 ||
+    !categories?.length ||
+    !searchTerms?.length ||
     !projectType ||
-    !skills.length === 0
+    !skills?.length
   ) {
     return res.status(400).json({ message: "All fields are required" });
   }
+  if (
+    (minHourlyRate && isNaN(minHourlyRate)) ||
+    (maxHourlyRate && isNaN(maxHourlyRate)) ||
+    (minFixedPrice && isNaN(minFixedPrice)) ||
+    (maxFixedPrice && isNaN(maxFixedPrice))
+  ) {
+    return res.status(400).json({ message: "Price fields must be numbers" });
+  }
+
+  if (minHourlyRate && maxHourlyRate && minHourlyRate > maxHourlyRate) {
+    return res
+      .status(400)
+      .json({ message: "minHourlyRate cannot be greater than maxHourlyRate" });
+  }
+
+  if (minFixedPrice && maxFixedPrice && minFixedPrice > maxFixedPrice) {
+    return res
+      .status(400)
+      .json({ message: "minFixedPrice cannot be greater than maxFixedPrice" });
+  }
+  if (experienceLevel && !Array.isArray(experienceLevel)) {
+    return res
+      .status(400)
+      .json({ message: "experienceLevel must be an array" });
+  }
+
   try {
     const filter = await Filter.findByIdAndUpdate(
       id,
@@ -83,9 +180,19 @@ export async function updateFilter(req, res) {
         searchTerms,
         projectType,
         skills,
+        minHourlyRate,
+        maxHourlyRate,
+        minFixedPrice,
+        maxFixedPrice,
+        experienceLevel,
       },
       { new: true }
     );
+
+    if (!filter) {
+      return res.status(404).json({ message: "Filter not found" });
+    }
+
     return res.status(200).json({
       success: true,
       data: filter,
