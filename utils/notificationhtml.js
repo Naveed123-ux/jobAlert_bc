@@ -42,3 +42,51 @@ export function notifcationHtml(scraped, name) {
 
   return html;
 }
+export function slackNotificationMessage(scraped, name) {
+  if (!scraped || scraped.length === 0) {
+    return {
+      text: `Hello ${name}, no new job postings were found for your criteria.`,
+    };
+  }
+  const blocks = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `Hello ${name},`,
+        emoji: true,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "Here are the latest job postings that match your criteria:",
+      },
+    },
+    {
+      type: "divider",
+    },
+  ];
+  scraped.forEach((data) => {
+    const createdTime = new Date(data?.ts_create).toLocaleString();
+    let budgetText = "";
+    if (data?.type !== "FIXED") {
+      budgetText = `*Budget:* min: ${data?.hourly?.min} max: ${data?.hourly?.max}`;
+    } else {
+      budgetText = `*Budget:* ${data?.fixed?.budget?.amount}`;
+    }
+    const sectionText = `*${data?.title}*\n${data?.type}\n${data?.description}\n*Posted on:* ${createdTime}\n${budgetText}\n<${data?.url}|View Posting>`;
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: sectionText,
+      },
+    });
+    blocks.push({
+      type: "divider",
+    });
+  });
+  return { blocks };
+}

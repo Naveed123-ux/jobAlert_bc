@@ -2,10 +2,14 @@ import { ApifyClient } from "apify-client";
 import dotenv from "dotenv";
 dotenv.config();
 import User from "../models/user.model.js";
-import { notifcationHtml } from "../utils/notificationhtml.js";
-import { sendNotification } from "../utils/sendEmail.js";
+import {
+  notifcationHtml,
+  slackNotificationMessage,
+} from "../utils/notificationhtml.js";
+import { sendNotification, sendSlackMessage } from "../utils/sendEmail.js";
 import filterModel from "../models/filter.model.js";
 import Notification from "../models/notifcation.model.js";
+import axios from "axios";
 
 const client = new ApifyClient({
   token: process.env.APIFY_TOKEN,
@@ -109,6 +113,16 @@ export async function scrapeData(req, res) {
                 "New jobs",
                 body
               );
+              if (
+                notification.slackNotifications &&
+                notification.slackWebHookUrl
+              ) {
+                const message = slackNotificationMessage(
+                  recentItems,
+                  filter_1.name
+                );
+                await sendSlackMessage(notification.slackWebHookUrl, message);
+              }
             } catch (error) {
               // Catch and log any error for the individual filter
               console.error(
@@ -137,6 +151,30 @@ export async function scrapeData(req, res) {
     res.status(500).json({
       error: "Failed to scrape data from Apify",
       details: err.message,
+    });
+  }
+}
+
+export async function sendMessage(req, res) {
+  try {
+    const { message, webhookUrl } = req.body;
+    const payload = { text: message };
+    const response = await axios.post(webhookUrl, payload);
+    if (response.status === 200) {
+      console.log("Slack notification sent successfully");
+    } else {
+      console.error("Failed to send Slack notification:", response.data);
+    }
+    res.status(200).json({
+      success: true,
+      message: "Slack notification sent successfully",
+    });
+  } catch (error) {
+    console.error("Error sending Slack notification:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send Slack notification",
+      error: error.message,
     });
   }
 }

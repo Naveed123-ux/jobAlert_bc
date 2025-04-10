@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import axios from "axios";
 dotenv.config();
 
 const transpoter = await nodemailer.createTransport({
@@ -75,5 +76,19 @@ export async function sendNotification(reciever, subject, body) {
       success: false,
       message: "Internal server error",
     };
+  }
+}
+
+export async function sendSlackMessage(webhookUrl, message) {
+  try {
+    const payload = { text: message };
+    const response = await axios.post(webhookUrl, payload);
+    if (response.status === 200) {
+      console.log("Slack notification sent successfully");
+    } else {
+      console.error("Failed to send Slack notification:", response.data);
+    }
+  } catch (error) {
+    console.error("Error sending Slack notification:", error.message);
   }
 }

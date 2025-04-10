@@ -15,6 +15,18 @@ const notficationSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    telegramChatId: {
+      type: String,
+    },
+    telegramNotifications: {
+      type: Boolean,
+    },
+    slackWebHookUrl: {
+      type: String,
+    },
+    slackNotifications: {
+      type: Boolean,
+    },
   },
   { timestamps: true }
 );
