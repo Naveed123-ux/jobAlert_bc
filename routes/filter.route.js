@@ -7,12 +7,13 @@ import {
   activateOrDeactivateFilter,
   deleteFilter,
 } from "../controllers/jobFilter.controller.js";
+import { checkAccessToken } from "../middlewares/jwtVerify.js";
 
 const router = Router();
 
-router.post("/addFilter", addFilter);
-router.put("/updateFilter/:id", updateFilter);
-router.get("/getFilters/:userId", getFilters);
+router.post("/addFilter", checkAccessToken, addFilter);
+router.put("/updateFilter/:id", checkAccessToken, updateFilter);
+router.get("/getFilters", checkAccessToken, getFilters);
 router.put("/activateOrDeactivateFilter/:id", activateOrDeactivateFilter);
 router.delete("/deleteFilter/:id", deleteFilter);
 

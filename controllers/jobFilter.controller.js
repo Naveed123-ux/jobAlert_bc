@@ -3,7 +3,6 @@ import User from "../models/user.model.js";
 export async function addFilter(req, res) {
   const {
     name,
-    userId,
     categories,
     searchTerms,
     projectType,
@@ -14,6 +13,7 @@ export async function addFilter(req, res) {
     maxFixedPrice,
     experienceLevel,
   } = req.body;
+  const { id } = req.user;
   for (const [index, no] of experienceLevel.entries()) {
     if (no === "Expert") {
       experienceLevel[index] = "3";
@@ -22,12 +22,10 @@ export async function addFilter(req, res) {
     } else if (no === "EntryLevel" || no === "Entry Level") {
       experienceLevel[index] = "1";
     } else {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Experience level must be one of the following: Beginner, Intermediate, Expert",
-        });
+      return res.status(400).json({
+        message:
+          "Experience level must be one of the following: Beginner, Intermediate, Expert",
+      });
     }
     if (
       !name ||
@@ -67,14 +65,14 @@ export async function addFilter(req, res) {
   }
 
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const filter = await Filter.create({
       name,
-      userId,
+      userId: id,
       categories,
       searchTerms,
       projectType,
@@ -101,13 +99,13 @@ export async function addFilter(req, res) {
 }
 
 export async function getFilters(req, res) {
-  const { userId } = req.params;
+  const { id } = req.user;
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const filters = await Filter.find({ userId: userId });
+    const filters = await Filter.find({ userId: id });
     return res.status(200).json({
       success: true,
       data: filters,

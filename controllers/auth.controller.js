@@ -238,7 +238,7 @@ export async function refreshToken(req, res) {
 
 export async function updateName(req, res) {
   try {
-    const { id } = req.params;
+    const { id } = req.user;
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
@@ -258,7 +258,7 @@ export async function updateName(req, res) {
 
 export async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body;
-  const { id } = req.params;
+  const { id } = req.user;
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ message: "All fields are required" });
   }

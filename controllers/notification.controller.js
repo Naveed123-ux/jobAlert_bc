@@ -3,7 +3,7 @@ import Notification from "../models/notifcation.model.js";
 import { Telegraf } from "telegraf";
 import dotenv from "dotenv";
 export async function setNotifcationRecieverEmail(req, res) {
-  const { id } = req.params;
+  const { id } = req.user;
   const { email } = req.body;
   if (!id || !email) {
     return res.status(400).json({
@@ -79,7 +79,7 @@ export async function toggleEmailNotifications(req, res) {
   }
 }
 export async function setSlackWebHookUrl(req, res) {
-  const { id } = req.params;
+  const { id } = req.user;
   const { slackWebHookUrl } = req.body;
   if (!slackWebHookUrl || !id) {
     return res.status(400).json({
