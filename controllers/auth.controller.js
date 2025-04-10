@@ -69,7 +69,7 @@ export async function verifyEmail(req, res) {
     }
     user.isVerified = true;
     await user.save();
-    res.status(200).json({ message: "Email verified successfully" });
+    res.redirect(`${process.env.CLIENT_URL}/login`);
   } catch (err) {
     console.log(err);
     return res.status(500).json({ message: "Internal server error" });
