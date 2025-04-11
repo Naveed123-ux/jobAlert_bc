@@ -4,6 +4,7 @@ import scrapeRoutes from "./scraper.routes.js";
 import filterRoutes from "./filter.route.js";
 import notificationRoutes from "./notifcation.route.js";
 import paymentRoutes from "./payment.route.js";
+import plansRoutes from "./plan.route.js";
 
 const router = express.Router();
 
@@ -12,5 +13,6 @@ router.use("/scrape", scrapeRoutes);
 router.use("/filter", filterRoutes);
 router.use("/notification", notificationRoutes);
 router.use("/payment", paymentRoutes);
+router.use("/plans", plansRoutes);
 
 export default router;
