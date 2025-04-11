@@ -17,11 +17,11 @@ export async function addFilter(req, res) {
   const { id } = req.user;
 
   for (const [index, no] of experienceLevel.entries()) {
-    if (no === "Expert") {
+    if (no === "expert") {
       experienceLevel[index] = "3";
-    } else if (no === "Intermediate") {
+    } else if (no === "intermediate") {
       experienceLevel[index] = "2";
-    } else if (no === "EntryLevel" || no === "Entry Level") {
+    } else if (no === "entry" || no === "Entry Level") {
       experienceLevel[index] = "1";
     } else {
       return res.status(400).json({
