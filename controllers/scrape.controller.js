@@ -107,12 +107,17 @@ export async function scrapeData(req, res) {
                 const itemCreateTime = new Date(item.ts_create);
                 return itemCreateTime >= cutoffTime;
               });
-              const body = notifcationHtml(recentItems, filter_1.name);
-              await sendNotification(
-                notification.recievingEmail,
-                "New jobs",
-                body
-              );
+              if (
+                notification.emailNotifications &&
+                notification.recievingEmail
+              ) {
+                const body = notifcationHtml(recentItems, filter_1.name);
+                await sendNotification(
+                  notification.recievingEmail,
+                  "New jobs",
+                  body
+                );
+              }
               if (
                 notification.slackNotifications &&
                 notification.slackWebHookUrl

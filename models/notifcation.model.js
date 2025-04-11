@@ -9,20 +9,21 @@ const notficationSchema = new Schema(
     },
     recievingEmail: {
       type: String,
-      required: true,
+      default: "",
     },
     emailNotifications: {
       type: Boolean,
-      default: true,
     },
     telegramChatId: {
       type: String,
+      default: "",
     },
     telegramNotifications: {
       type: Boolean,
     },
     slackWebHookUrl: {
       type: String,
+      default: "",
     },
     slackNotifications: {
       type: Boolean,

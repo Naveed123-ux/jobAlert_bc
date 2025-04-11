@@ -24,7 +24,7 @@ export async function setNotifcationRecieverEmail(req, res) {
     });
     if (notificationReciever) {
       notificationReciever.recievingEmail = email;
-
+      notificationReciever.emailNotifications = true;
       await notificationReciever.save();
       return res.status(200).json({
         success: true,
@@ -34,6 +34,7 @@ export async function setNotifcationRecieverEmail(req, res) {
     const newNotificationReciever = new Notification({
       userId: id,
       recievingEmail: email,
+      emailNotifications: true,
     });
     await newNotificationReciever.save();
     return res.status(200).json({
@@ -138,6 +139,35 @@ export async function toggleSlackNotifications(req, res) {
       message: "Slack notification updated successfully",
     });
   } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+export async function getUserRelatedNotifcations(req, res) {
+  const { id } = req.user;
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "id is required",
+    });
+  }
+  try {
+    const notification = await Notification.findOne({ userId: id });
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Notification found",
+      data: notification,
+    });
+  } catch (error) {
+    console.error("Error getting user related notifications:", error.message);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
