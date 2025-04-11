@@ -15,6 +15,7 @@ export async function addFilter(req, res) {
     experienceLevel,
   } = req.body;
   const { id } = req.user;
+
   for (const [index, no] of experienceLevel.entries()) {
     if (no === "Expert") {
       experienceLevel[index] = "3";
@@ -30,7 +31,7 @@ export async function addFilter(req, res) {
     }
     if (
       !name ||
-      !userId ||
+      !id ||
       !categories?.length ||
       !searchTerms?.length ||
       !projectType ||
@@ -71,7 +72,9 @@ export async function addFilter(req, res) {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
+    if (user.trialEnd < Date.now() || !user.isSubscribed) {
+      return res.status(403).json({ message: "User is not subscribed" });
+    }
     const filter = await Filter.create({
       name,
       userId: id,
@@ -123,6 +126,7 @@ export async function getFilters(req, res) {
 }
 export async function updateFilter(req, res) {
   const { id } = req.params;
+  const userId = req.use.idr;
   const {
     name,
     categories,
@@ -172,6 +176,10 @@ export async function updateFilter(req, res) {
   }
 
   try {
+    const user = await User.findById(userId);
+    if (user.trialEnd < Date.now() || !user.isSubscribed) {
+      return res.status(403).json({ message: "User is not subscribed" });
+    }
     const filter = await Filter.findByIdAndUpdate(
       id,
       {

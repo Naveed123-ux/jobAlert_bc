@@ -72,6 +72,13 @@ export async function scrapeData(req, res) {
 
     const allUserPromises = users.map(async (user) => {
       return new Promise(async (resolve, reject) => {
+        if (!user.isSubscribed || user.trialEnd < Date.now()) {
+          console.log(
+            "User is not subscribed or trial period has ended:",
+            user._id
+          );
+          return reject("user is not subscribed"); // Skip this user
+        }
         try {
           const filters = await filterModel.find({ userId: user._id });
           const notification = await Notification.findOne({ userId: user._id });
