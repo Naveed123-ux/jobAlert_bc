@@ -6,7 +6,8 @@ import {
   updateSubscriptionStatus,
   determineTrialStatus,
 } from "../utils/stripe.js";
-
+import { generateInvoiceNumber } from "../utils/invoice.js";
+import BillingHistory from "../models/billing.model.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 async function createCheckoutSession(req, res) {
@@ -71,22 +72,118 @@ async function stripeWebhook(req, res) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  switch (event.type) {
-    case "checkout.session.completed":
-    case "invoice.payment_succeeded":
-    case "invoice.payment_failed": {
-      const userId = event.data.object.metadata.userId;
-      const user = await User.findById(userId);
-      if (user) {
-        await updateSubscriptionStatus(user, event.type, event.data.object);
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        const userId = session.metadata.userId;
+        const user = await User.findById(userId);
+
+        if (user && session.payment_status === "paid") {
+          const invoiceNumber = await generateInvoiceNumber();
+
+          await BillingHistory.create({
+            userId,
+            invoiceNumber,
+            date: new Date(),
+            planName: session.metadata.planName,
+            amount: session.amount_total / 100,
+            status: "Paid",
+          });
+
+          await updateSubscriptionStatus(user, event.type, session);
+        }
+        break;
       }
-      break;
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object;
+        const userId = invoice.metadata?.userId;
+
+        if (userId) {
+          const user = await User.findById(userId);
+          if (user) {
+            const invoiceNumber = await generateInvoiceNumber();
+
+            await BillingHistory.create({
+              userId,
+              invoiceNumber,
+              date: new Date(invoice.created * 1000),
+              planName:
+                invoice.metadata?.planName || user.planName || "Unknown",
+              amount: invoice.amount_paid / 100,
+              status: "Paid",
+            });
+
+            await updateSubscriptionStatus(user, event.type, invoice);
+          }
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        const userId = invoice.metadata?.userId;
+
+        if (userId) {
+          const user = await User.findById(userId);
+          if (user) {
+            const invoiceNumber = await generateInvoiceNumber();
+
+            await BillingHistory.create({
+              userId,
+              invoiceNumber,
+              date: new Date(invoice.created * 1000),
+              planName:
+                invoice.metadata?.planName || user.planName || "Unknown",
+              amount: invoice.amount_due / 100,
+              status: "Failed",
+            });
+
+            await updateSubscriptionStatus(user, event.type, invoice);
+          }
+        }
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error(`Webhook processing error: ${err.message}`);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  res.status(200).json({ received: true });
 }
+async function getBillingHistory(req, res) {
+  try {
+    const userId = getUserIdFromToken(req);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const billingHistory = await BillingHistory.find({ userId }).lean();
+    const formattedBillingHistory = billingHistory.map((record) => ({
+      ...record,
+      date: new Date(record.date).toLocaleDateString("en-US", {
+        month: "long",
+        day: "2-digit",
+        year: "numeric",
+      }),
+    }));
 
-export { createCheckoutSession, stripeWebhook };
+    res.status(200).json({
+      data: formattedBillingHistory,
+    });
+  } catch (err) {
+    console.error(`Error fetching billing history: ${err.message}`);
+    const statusCode =
+      err.message === "Authorization token is required" ||
+      err.message === "Invalid or expired token"
+        ? 401
+        : 500;
+    res.status(statusCode).json({ error: err.message });
+  }
+}
+export { createCheckoutSession, stripeWebhook, getBillingHistory };
