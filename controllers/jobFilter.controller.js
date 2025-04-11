@@ -1,5 +1,6 @@
 import Filter from "../models/filter.model.js";
 import User from "../models/user.model.js";
+import { jobCategoryEnum } from "../constants/enum.js";
 export async function addFilter(req, res) {
   const {
     name,
@@ -38,6 +39,7 @@ export async function addFilter(req, res) {
       return res.status(400).json({ message: "All fields are required" });
     }
   }
+
   if (
     (minHourlyRate && isNaN(minHourlyRate)) ||
     (maxHourlyRate && isNaN(maxHourlyRate)) ||

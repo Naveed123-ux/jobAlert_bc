@@ -2,7 +2,10 @@ import { hashPassword, comparePassword } from "../utils/hashing.js";
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { sendMail } from "../utils/sendEmail.js";
-import { verificationHtml } from "../utils/verificationLinkHtml.js";
+import {
+  verificationHtml,
+  resetLinkHtml,
+} from "../utils/verificationLinkHtml.js";
 
 export async function signUp(req, res) {
   try {
@@ -280,5 +283,84 @@ export async function changePassword(req, res) {
     res
       .status(500)
       .json({ success: false, message: "error updating password" });
+  }
+}
+
+export async function forgotPassowrd(req, res) {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: true, message: "User not found" });
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+    const html = resetLinkHtml(token);
+    await sendMail(email, "Reset Password", html);
+    res.status(200).json({
+      success: true,
+      message: "Reset password link sent to your email",
+    });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+export async function verifyResetPasswordLink(req, res) {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(400).json({ message: "Invalid token" });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    res.redirect(`${process.env.CLIENT_URL}/reset-password?token=${token}`);
+  } catch (error) {
+    console.error("Verify Reset Password Link Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+export async function resetPassword(req, res) {
+  const { token } = req.query;
+  const { newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
+  }
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  if (!decoded) {
+    return res.status(400).json({ success: false, message: "Invalid token" });
+  }
+  try {
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User not found" });
+    }
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

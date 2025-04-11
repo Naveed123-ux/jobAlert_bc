@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 import Notification from "../models/notifcation.model.js";
-import { Telegraf } from "telegraf";
+
 import dotenv from "dotenv";
 export async function setNotifcationRecieverEmail(req, res) {
   const { id } = req.user;
