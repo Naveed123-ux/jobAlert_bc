@@ -5,8 +5,13 @@ import User from "../models/user.model.js";
 import {
   notifcationHtml,
   slackNotificationMessage,
+  telegramNotificationMessage,
 } from "../utils/notificationhtml.js";
-import { sendNotification, sendSlackMessage } from "../utils/sendEmail.js";
+import {
+  sendNotification,
+  sendSlackMessage,
+  sendTelegramMessage,
+} from "../utils/sendEmail.js";
 import filterModel from "../models/filter.model.js";
 import Notification from "../models/notifcation.model.js";
 import axios from "axios";
@@ -124,6 +129,16 @@ export async function scrapeData(req, res) {
                   "New jobs",
                   body
                 );
+              }
+              if (
+                notification.telegramChatId &&
+                notification.telegramNotifications
+              ) {
+                const message = telegramNotificationMessage(
+                  recentItems,
+                  filter_1.name
+                );
+                await sendTelegramMessage(notification.telegramChatId, message);
               }
               if (
                 notification.slackNotifications &&

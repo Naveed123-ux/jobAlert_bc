@@ -92,3 +92,24 @@ export async function sendSlackMessage(webhookUrl, message) {
     console.error("Error sending Slack notification:", error.message);
   }
 }
+
+export async function sendTelegramMessage(chatId, message) {
+  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  try {
+    const response = await axios.post(url, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: "Markdown",
+      disable_web_page_preview: false,
+    });
+
+    if (response.status === 200) {
+      console.log("Telegram notification sent successfully");
+    } else {
+      console.error("Failed to send Telegram notification:", response.data);
+    }
+  } catch (error) {
+    console.error("Error sending Telegram notification:", error.message);
+  }
+}

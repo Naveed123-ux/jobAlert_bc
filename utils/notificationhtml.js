@@ -90,3 +90,30 @@ export function slackNotificationMessage(scraped, name) {
   });
   return { blocks };
 }
+export function telegramNotificationMessage(scraped, name) {
+  if (!scraped || scraped.length === 0) {
+    return `👋 Hello ${name},\n\nNo new job postings were found for your criteria.`;
+  }
+
+  let message = `👋 Hello ${name},\n\nHere are the latest job postings that match your criteria:\n\n`;
+
+  scraped.forEach((data) => {
+    const createdTime = new Date(data?.ts_create).toLocaleString();
+    let budgetText = "";
+
+    if (data?.type !== "FIXED") {
+      budgetText = `*Budget:* min: ${data?.hourly?.min} max: ${data?.hourly?.max}`;
+    } else {
+      budgetText = `*Budget:* ${data?.fixed?.budget?.amount}`;
+    }
+
+    message += `🔹 *${data?.title}*\n`;
+    message += `${data?.type}\n`;
+    message += `${data?.description}\n`;
+    message += `*Posted on:* ${createdTime}\n`;
+    message += `${budgetText}\n`;
+    message += `[View Posting](${data?.url})\n\n`;
+  });
+
+  return message;
+}

@@ -1,7 +1,8 @@
 import User from "../models/user.model.js";
 import Notification from "../models/notifcation.model.js";
+import TelegramBot from "node-telegram-bot-api";
+import "dotenv/config";
 
-import dotenv from "dotenv";
 export async function setNotifcationRecieverEmail(req, res) {
   const { id } = req.user;
   const { email } = req.body;
@@ -175,35 +176,36 @@ export async function getUserRelatedNotifcations(req, res) {
   }
 }
 
-// const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-// async function saveUserToDatabase(chatId, id) {
-//   try {
-//     const notifcation = await Notification.findOne({ userId: id });
-//     if (!notifcation) {
-//       const newNotification = new Notification({
-//         userId: id,
-//         telegramChatId: chatId,
-//         telegramNotifications: true,
-//       });
-//       await newNotification.save();
-//     }
-//     notifcation.telegramChatId = chatId;
-//     notifcation.telegramNotifications = true;
-//     await notifcation.save();
-//   } catch (error) {
-//     console.error("Error saving user to database:", error.message);
-//     throw new Error("Failed to save user to database");
-//   }
-// }
+async function saveUserToDatabase(chatId, id) {
+  try {
+    const notifcation = await Notification.findOne({ userId: id });
+    if (!notifcation) {
+      const newNotification = new Notification({
+        userId: id,
+        telegramChatId: chatId,
+        telegramNotifications: true,
+      });
+      await newNotification.save();
+    }
+    notifcation.telegramChatId = chatId;
+    notifcation.telegramNotifications = true;
+    await notifcation.save();
+  } catch (error) {
+    console.error("Error saving user to database:", error.message);
+    throw new Error("Failed to save user to database");
+  }
+}
 
-// bot.start(async (ctx) => {
-//   const chatId = ctx.chat.id;
-//   const username = ctx.from.username;
-//   const id = ctx.payload;
+const token = process.env.TELEGRAM_BOT_TOKEN;
 
-//   await saveUserToDatabase(chatId, id);
+const bot = new TelegramBot(token, { polling: true });
 
-//   ctx.reply(`You're now subscribed to job alerts on Telegram! ✅`);
-// });
+bot.onText(/\/start (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const param = match[1];
+  console.log("param", param);
+  console.log("chatId", chatId);
+  await saveUserToDatabase(chatId, param);
 
-// bot.launch();
+  bot.sendMessage(chatId, `You started the bot with: ${param}`);
+});
