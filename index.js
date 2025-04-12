@@ -10,13 +10,21 @@ const port = process.env.PORT || 3000;
 connectDB();
 dotenv.config();
 const app = express();
+const allowedOrigins = ["http://localhost:4001"]; // Add all allowed origins here
 
-const corsOptions = {
-  origin: process.env.CLIENT_URL,
-  credentials: true,
-};
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Allow cookies if you're using them
+  })
+);
 
-app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
