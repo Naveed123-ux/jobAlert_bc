@@ -263,3 +263,25 @@ export async function deleteFilter(req, res) {
     });
   }
 }
+
+export async function getSpecificFilter(req, res) {
+  const { id } = req.params;
+  try {
+    const filter = await Filter.findById(id);
+    if (!filter)
+      return res
+        .status(404)
+        .json({ success: false, message: "Filter not found" });
+    res.status(200).json({
+      success: true,
+      data: filter,
+      message: "Filter fetched successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching filter", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
