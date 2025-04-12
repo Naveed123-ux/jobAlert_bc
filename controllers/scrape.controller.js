@@ -1,5 +1,6 @@
 import { ApifyClient } from "apify-client";
 import dotenv from "dotenv";
+import cron from "node-cron";
 dotenv.config();
 import User from "../models/user.model.js";
 import {
@@ -71,7 +72,7 @@ const client = new ApifyClient({
 //   }
 // }
 
-export async function scrapeData(req, res) {
+export async function scrapeDataCronJob() {
   try {
     const users = await User.find({ isVerified: true });
 
@@ -84,14 +85,15 @@ export async function scrapeData(req, res) {
           );
           return reject("user is not subscribed"); // Skip this user
         }
+
         try {
           const filters = await filterModel.find({ userId: user._id });
           const notification = await Notification.findOne({ userId: user._id });
 
           const filterPromises = filters.map(async (filter_1) => {
             console.log("filter_1", filter_1);
+
             const input = {
-              // query: filter_1.name,
               sort: "newest",
               category: filter_1.categories,
               search: { any: filter_1.searchTerms.join(" ") },
@@ -107,18 +109,23 @@ export async function scrapeData(req, res) {
               price_max: filter_1.maxFixedPrice,
               tier: filter_1.experienceLevel,
             };
+
             try {
               const run = await client.actor("jupri/upwork").call(input);
               const { items } = await client
                 .dataset(run.defaultDatasetId)
                 .listItems();
+
               console.log("items", items);
+
               const currentTime = new Date();
-              const cutoffTime = new Date(currentTime - 7.5 * 60 * 60 * 1000);
+              const cutoffTime = new Date(currentTime - 7.5 * 60 * 60 * 1000); // last 7.5 hours
+
               const recentItems = items.filter((item) => {
                 const itemCreateTime = new Date(item.ts_create);
                 return itemCreateTime >= cutoffTime;
               });
+
               if (
                 notification.emailNotifications &&
                 notification.recievingEmail
@@ -130,6 +137,7 @@ export async function scrapeData(req, res) {
                   body
                 );
               }
+
               if (
                 notification.telegramChatId &&
                 notification.telegramNotifications
@@ -140,6 +148,7 @@ export async function scrapeData(req, res) {
                 );
                 await sendTelegramMessage(notification.telegramChatId, message);
               }
+
               if (
                 notification.slackNotifications &&
                 notification.slackWebHookUrl
@@ -151,13 +160,13 @@ export async function scrapeData(req, res) {
                 await sendSlackMessage(notification.slackWebHookUrl, message);
               }
             } catch (error) {
-              // Catch and log any error for the individual filter
               console.error(
                 `Error scraping filter "${filter_1.name}":`,
                 error.message
               );
             }
           });
+
           const filterResults = await Promise.allSettled(filterPromises);
           resolve(filterResults);
         } catch (err) {
@@ -166,42 +175,17 @@ export async function scrapeData(req, res) {
         }
       });
     });
+
     const userResults = await Promise.allSettled(allUserPromises);
 
-    res.status(200).json({
-      success: true,
-      message: "Scraping completed successfully",
-      userResults,
-    });
+    console.log("✅ Scraping completed successfully");
+    console.log(userResults);
   } catch (err) {
-    console.error("Error scraping Upwork:", err.message);
-    res.status(500).json({
-      error: "Failed to scrape data from Apify",
-      details: err.message,
-    });
+    console.error("❌ Error scraping Upwork:", err.message);
   }
 }
 
-export async function sendMessage(req, res) {
-  try {
-    const { message, webhookUrl } = req.body;
-    const payload = { text: message };
-    const response = await axios.post(webhookUrl, payload);
-    if (response.status === 200) {
-      console.log("Slack notification sent successfully");
-    } else {
-      console.error("Failed to send Slack notification:", response.data);
-    }
-    res.status(200).json({
-      success: true,
-      message: "Slack notification sent successfully",
-    });
-  } catch (error) {
-    console.error("Error sending Slack notification:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Failed to send Slack notification",
-      error: error.message,
-    });
-  }
-}
+cron.schedule("0 */8 * * *", async () => {
+  console.log("⏰ Running Upwork scraping cron job (every 8 hours)...");
+  await scrapeDataCronJob();
+});
