@@ -95,7 +95,7 @@ export function telegramNotificationMessage(scraped, name) {
     return `👋 Hello ${name},\n\nNo new job postings were found for your criteria.`;
   }
 
-  let message = `👋 Hello ${name},\n\nHere are the latest job postings that match your criteria:\n\n`;
+  let message = ` Hello ${name},\n\nHere are the latest job postings that match your criteria:\n\n`;
 
   scraped.forEach((data) => {
     const createdTime = new Date(data?.ts_create).toLocaleString();
